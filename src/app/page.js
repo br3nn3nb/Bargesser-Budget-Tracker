@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 
 /*
-  Full Monthly Budget app — complete version.
-  - All features preserved and restored.
-  - Formatting: $ + commas for displayed amounts.
-  - Inputs are plain numbers while editing (Option 2).
-  - No custom "use..." function names to avoid React Hook lint issues.
-  - Table borders, spacing, add/edit categories, quick adds, transactions, grouped totals, export/import, per-month localStorage, month navigation.
+  Full Monthly Budget app (based on the long version you liked).
+  - ALL previous features preserved.
+  - Grouped Totals by Description has been REMOVED (per request).
+  - Transaction History moved up to occupy the removed table's place.
+  - Formatting: displayed amounts use $ + commas (formatCurrency).
+  - Inputs are plain while editing (Option 2).
+  - No custom "use..." functions that could be mistaken as hooks in callbacks.
+  - Table borders, spacing, import/export, quick adds, add/edit categories, month navigation, localStorage persistence.
 */
 
 const getMonthKey = (date = new Date()) =>
@@ -42,30 +44,27 @@ const defaultIncome = [
 ];
 
 export default function Page() {
-  // --- State
+  // ---- State
   const [currentMonth, setCurrentMonth] = useState(getMonthKey());
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [beginningBalance, setBeginningBalance] = useState(0);
 
-  // Add transaction form state
+  // Add transaction form (plain inputs while editing)
   const [newTx, setNewTx] = useState({ type: "expense", category: "", description: "", amount: "", date: "" });
 
-  // Quick adds and the quick-add creation form
+  // Quick adds (arrays for expense and income) + creator form
   const [quickAdds, setQuickAdds] = useState({ expense: [], income: [] });
   const [quickAddForm, setQuickAddForm] = useState({ type: "expense", category: "", description: "", amount: "" });
 
-  // UI helpers: search/sort/filter
+  // UI: search, sort, filter
   const [searchText, setSearchText] = useState("");
   const [sortKey, setSortKey] = useState("date"); // date, amount, category, description
   const [filterType, setFilterType] = useState("all"); // all, expense, income
 
-  // Inline editing helpers (to keep inputs numeric while editing)
-  // We allow editing category names and budgets inline — budgets are numeric inputs.
-  // No "use..." function names are defined (avoids React hook lint issues).
+  // ---- Load per-month data from localStorage
   useEffect(() => {
-    // Load from localStorage for the selected month
     const raw = localStorage.getItem(currentMonth);
     if (raw) {
       try {
@@ -92,13 +91,13 @@ export default function Page() {
     }
   }, [currentMonth]);
 
+  // ---- Persist per-month
   useEffect(() => {
-    // Persist to localStorage for the selected month
     const payload = { expenses, income, transactions, beginningBalance, quickAdds };
     localStorage.setItem(currentMonth, JSON.stringify(payload));
   }, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
 
-  // --- Derived totals
+  // ---- Derived totals
   const totalExpenses = transactions.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0), 0);
   const totalIncome = transactions.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount || 0), 0);
   const currentBalance = Number(beginningBalance || 0) + totalIncome - totalExpenses;
@@ -113,15 +112,7 @@ export default function Page() {
     return { ...i, received };
   });
 
-  // grouped totals by description (only non-empty descriptions)
-  const groupedDescriptionTotals = {};
-  transactions.forEach(t => {
-    if (t.description && String(t.description).trim() !== "") {
-      groupedDescriptionTotals[t.description] = (groupedDescriptionTotals[t.description] || 0) + Number(t.amount || 0);
-    }
-  });
-
-  // --- Transaction list utilities: sorting/filter/search/filterType
+  // ---- Transaction list with search/sort/filter
   const filteredTransactions = transactions
     .filter(tx => (filterType === "all" ? true : tx.type === filterType))
     .filter(tx => {
@@ -142,7 +133,9 @@ export default function Page() {
       return 0;
     });
 
-  // --- Actions (no "use..." prefixed custom functions)
+  // ---- Actions
+
+  // Add transaction (adds to transaction history; budgets are editable separately)
   const addTransaction = () => {
     if (!newTx.category || !newTx.amount) return;
     const tx = {
@@ -157,7 +150,7 @@ export default function Page() {
     setNewTx({ type: newTx.type, category: "", description: "", amount: "", date: "" });
   };
 
-  // Quick add create / apply / delete
+  // Quick Add: create / apply / delete / edit
   const createQuickAdd = () => {
     if (!quickAddForm.category || !quickAddForm.amount) return;
     const q = {
@@ -166,7 +159,7 @@ export default function Page() {
       amount: Number(quickAddForm.amount),
     };
     setQuickAdds({ ...quickAdds, [quickAddForm.type]: [...quickAdds[quickAddForm.type], q] });
-    setQuickAddForm({ ...quickAddForm, category: "", description: "", amount: "" });
+    setQuickAddForm({ type: quickAddForm.type, category: "", description: "", amount: "" });
   };
 
   const applyQuickAdd = (q, type) => {
@@ -179,25 +172,21 @@ export default function Page() {
       date: new Date().toISOString().split("T")[0],
     };
     setTransactions([tx, ...transactions]);
-
-    // We will not automatically mutate budgets for quick add (user edits budgets separately).
-    // preserve ability to bump budgets if desired: left commented for clarity
-    // if (type === "expense") { ... }
   };
 
-  const removeQuickAdd = (index, type) => {
+  const deleteQuickAdd = (index, type) => {
     const copy = { ...quickAdds };
     copy[type] = copy[type].filter((_, i) => i !== index);
     setQuickAdds(copy);
   };
 
-  // Add/delete categories
+  // Category management
   const addExpenseCategory = () => setExpenses([...expenses, { name: "New Expense", budget: 0 }]);
   const addIncomeCategory = () => setIncome([...income, { name: "New Income", budget: 0 }]);
-  const deleteExpenseCategory = idx => setExpenses(expenses.filter((_, i) => i !== idx));
-  const deleteIncomeCategory = idx => setIncome(income.filter((_, i) => i !== idx));
+  const deleteExpenseCategory = index => setExpenses(expenses.filter((_, i) => i !== index));
+  const deleteIncomeCategory = index => setIncome(income.filter((_, i) => i !== index));
 
-  // Inline edits for budgets and names (inputs are plain numeric/text while editing)
+  // Inline edits for budgets and names (plain numeric while editing)
   const setExpenseBudget = (idx, value) => {
     const next = [...expenses];
     next[idx] = { ...next[idx], budget: Number(value || 0) };
@@ -220,10 +209,10 @@ export default function Page() {
     setIncome(next);
   };
 
-  // delete transaction
+  // Transaction deletion
   const deleteTransaction = id => setTransactions(transactions.filter(t => t.id !== id));
 
-  // export / import JSON
+  // Export/import JSON
   const exportJSON = () => {
     const data = { expenses, income, transactions, beginningBalance, quickAdds };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -247,21 +236,21 @@ export default function Page() {
         if (parsed.transactions) setTransactions(parsed.transactions);
         if (parsed.beginningBalance !== undefined) setBeginningBalance(parsed.beginningBalance);
         if (parsed.quickAdds) setQuickAdds(parsed.quickAdds);
-      } catch (err) {
+      } catch {
         alert("Invalid JSON file.");
       }
     };
     reader.readAsText(file);
   };
 
-  // month navigation
+  // Month navigation
   const goMonth = offset => {
     const [y, m] = currentMonth.split("-").map(Number);
     const date = new Date(y, m - 1 + offset);
     setCurrentMonth(getMonthKey(date));
   };
 
-  // styles (inline)
+  // ---- Styles
   const tableStyle = {
     borderCollapse: "collapse",
     width: "100%",
@@ -284,7 +273,7 @@ export default function Page() {
   const mediumInput = { width: 220, fontSize: 15, padding: 6, fontWeight: 800 };
   const categoryInput = { width: "100%", fontSize: 15, padding: 6, fontWeight: 700 };
 
-  // --- Render
+  // ---- Render
   return (
     <div style={{ padding: 14, background: "#fff", color: "#000", fontFamily: "Arial, sans-serif", lineHeight: 1.25 }}>
       {/* Header */}
@@ -296,7 +285,7 @@ export default function Page() {
         <button style={{ fontWeight: 800, fontSize: 20 }} onClick={() => goMonth(1)}>▶</button>
       </div>
 
-      {/* Beginning balance */}
+      {/* Beginning Balance */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
         <label style={{ fontWeight: 900, fontSize: 18 }}>Beginning Balance</label>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -311,7 +300,7 @@ export default function Page() {
         <div style={{ marginLeft: "auto", fontWeight: 900, fontSize: 18 }}>Current Balance: {formatCurrency(currentBalance)}</div>
       </div>
 
-      {/* Search / Sort / Import Export */}
+      {/* Search / Sort / Import / Export */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
         <input placeholder="Search transactions..." value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 260, padding: 6, fontWeight: 700 }} />
         <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={{ ...smallInput }}>
@@ -335,7 +324,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Add Transaction / Quick Add area (spaced) */}
+      {/* Add Transaction & Quick Add area (spaced) */}
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start", marginBottom: 14, flexWrap: "wrap" }}>
         {/* Add Transaction */}
         <div style={{ border: "1px solid #111", padding: 10, borderRadius: 6, minWidth: 440 }}>
@@ -348,10 +337,12 @@ export default function Page() {
 
             <select value={newTx.category} onChange={e => setNewTx({ ...newTx, category: e.target.value })} style={mediumInput}>
               <option value="">Select category</option>
-              {(newTx.type === "expense" ? expenses : income).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+              {(newTx.type === "expense" ? expenses : income).map(c => (
+                <option key={c.name} value={c.name}>{c.name}</option>
+              ))}
             </select>
 
-            <input placeholder="Description" value={newTx.description} onChange={e => setNewTx({ ...newTx, description: e.target.value })} style={{ ...mediumInput, width: 260 }} />
+            <input placeholder="Description" value={newTx.description} onChange={e => setNewTx({ ...newTx, description: e.target.value })} style={{ width: 260, padding: 6, fontWeight: 700 }} />
             <input placeholder="Amount" type="number" value={newTx.amount} onChange={e => setNewTx({ ...newTx, amount: e.target.value })} style={smallInput} />
             <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} style={smallInput} />
             <button onClick={addTransaction} style={{ fontWeight: 900, padding: "8px 12px" }}>Add</button>
@@ -363,7 +354,6 @@ export default function Page() {
           <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 900 }}>Quick Add</h3>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {/* Expense quick adds */}
             <div style={{ minWidth: 200 }}>
               <div style={{ fontWeight: 900 }}>Expense Quick Adds</div>
               {quickAdds.expense.map((q, i) => (
@@ -371,12 +361,11 @@ export default function Page() {
                   <button onClick={() => applyQuickAdd(q, "expense")} style={{ fontWeight: 800 }}>
                     {q.description} — {formatCurrency(q.amount)}
                   </button>
-                  <button onClick={() => removeQuickAdd(i, "expense")}>Delete</button>
+                  <button onClick={() => deleteQuickAdd(i, "expense")}>Delete</button>
                 </div>
               ))}
             </div>
 
-            {/* Income quick adds */}
             <div style={{ minWidth: 200 }}>
               <div style={{ fontWeight: 900 }}>Income Quick Adds</div>
               {quickAdds.income.map((q, i) => (
@@ -384,27 +373,27 @@ export default function Page() {
                   <button onClick={() => applyQuickAdd(q, "income")} style={{ fontWeight: 800 }}>
                     {q.description} — {formatCurrency(q.amount)}
                   </button>
-                  <button onClick={() => removeQuickAdd(i, "income")}>Delete</button>
+                  <button onClick={() => deleteQuickAdd(i, "income")}>Delete</button>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Creator for quick add */}
+          {/* Quick Add creator (editable custom) */}
           <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <select value={quickAddForm.type} onChange={e => setQuickAddForm({ ...quickAddForm, type: e.target.value })} style={smallInput}>
               <option value="expense">Expense</option>
               <option value="income">Income</option>
             </select>
-            <input placeholder="Category" value={quickAddForm.category} onChange={e => setQuickAddForm({ ...quickAddForm, category: e.target.value })} style={{ ...mediumInput, width: 180 }} />
-            <input placeholder="Description" value={quickAddForm.description} onChange={e => setQuickAddForm({ ...quickAddForm, description: e.target.value })} style={{ ...mediumInput, width: 180 }} />
+            <input placeholder="Category" value={quickAddForm.category} onChange={e => setQuickAddForm({ ...quickAddForm, category: e.target.value })} style={{ width: 180, padding: 6, fontWeight: 700 }} />
+            <input placeholder="Description" value={quickAddForm.description} onChange={e => setQuickAddForm({ ...quickAddForm, description: e.target.value })} style={{ width: 180, padding: 6, fontWeight: 700 }} />
             <input placeholder="Amount" type="number" value={quickAddForm.amount} onChange={e => setQuickAddForm({ ...quickAddForm, amount: e.target.value })} style={smallInput} />
             <button onClick={createQuickAdd} style={{ fontWeight: 900 }}>Create</button>
           </div>
         </div>
       </div>
 
-      {/* Tables: Expenses and Income side-by-side */}
+      {/* Expenses & Income tables side-by-side */}
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
         {/* Expenses */}
         <div style={{ flex: 1, minWidth: 520 }}>
@@ -435,7 +424,7 @@ export default function Page() {
                         type="number"
                         value={Number(e.budget)}
                         onChange={ev => setExpenseBudget(idx, ev.target.value)}
-                        style={{ ...smallInput, width: 110 }}
+                        style={{ width: 110, fontSize: 15, padding: 6, fontWeight: 800 }}
                       />
                       <div style={{ marginLeft: 6, fontWeight: 800 }}>{formatCurrency(e.budget)}</div>
                     </div>
@@ -481,7 +470,7 @@ export default function Page() {
                         type="number"
                         value={Number(i.budget)}
                         onChange={ev => setIncomeBudget(idx, ev.target.value)}
-                        style={{ ...smallInput, width: 110 }}
+                        style={{ width: 110, fontSize: 15, padding: 6, fontWeight: 800 }}
                       />
                       <div style={{ marginLeft: 6, fontWeight: 800 }}>{formatCurrency(i.budget)}</div>
                     </div>
@@ -499,33 +488,8 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Grouped totals by description */}
-      <div style={{ marginTop: 12 }}>
-        <h2 style={{ fontWeight: 900, fontSize: 20 }}>Grouped Totals by Description</h2>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thTdStyle}>Description</th>
-              <th style={thTdStyle}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(groupedDescriptionTotals).length === 0 ? (
-              <tr><td style={thTdStyle} colSpan={2}>No grouped descriptions yet</td></tr>
-            ) : (
-              Object.entries(groupedDescriptionTotals).map(([desc, amt]) => (
-                <tr key={desc}>
-                  <td style={thTdStyle}>{desc}</td>
-                  <td style={thTdStyle}>{formatCurrency(amt)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Transaction history */}
-      <div style={{ marginTop: 12 }}>
+      {/* Transaction history (shifted up to fill removed table space) */}
+      <div style={{ marginTop: 6 }}>
         <h2 style={{ fontWeight: 900, fontSize: 20 }}>Transaction History</h2>
         <table style={tableStyle}>
           <thead>
