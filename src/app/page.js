@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 
 const getMonthKey = (date = new Date()) =>
@@ -34,9 +33,9 @@ export default function Home() {
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [newTx, setNewTx] = useState({ type: "expense", category: "", description: "", amount: 0, date: "" });
   const [beginningBalance, setBeginningBalance] = useState(0);
   const [quickAdds, setQuickAdds] = useState({ expense: [], income: [] });
+  const [newTx, setNewTx] = useState({ type: "expense", category: "", description: "", amount: 0, date: "" });
 
   useEffect(() => {
     const savedData = JSON.parse(localStorage.getItem(currentMonth));
@@ -84,6 +83,8 @@ export default function Home() {
     }
   });
 
+  const formatCurrency = (num) => "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const addTransaction = () => {
     if (!newTx.category || !newTx.amount) return;
     const tx = { ...newTx, amount: Number(newTx.amount), id: Date.now() };
@@ -125,8 +126,6 @@ export default function Home() {
   const compactInput = { width: "100px", fontSize: "18px", padding: "4px", fontWeight: "bold" };
   const nameInput = { width: "150px", fontSize: "18px", padding: "4px", fontWeight: "bold" };
 
-  const formatCurrency = (num) => "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   return (
     <div style={{ padding: "0.5rem", backgroundColor: "white", color: "black", fontFamily: "Arial, sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -143,17 +142,58 @@ export default function Home() {
           onChange={(e) => setBeginningBalance(Number(e.target.value))}
           style={{ fontWeight: "bold", fontSize: "20px", width: "150px", padding: "4px" }}
         />
+        <span style={{ fontWeight: "bold", fontSize: "20px", marginLeft: "0.5rem" }}>{formatCurrency(beginningBalance)}</span>
       </div>
+
       <h3 style={{ margin: "0.5rem 0 1rem", fontWeight: "bold", fontSize: "20px" }}>
         Current Balance: {formatCurrency(balance)}
       </h3>
 
-      {/* Add Transaction and Quick Add sections remain unchanged */}
+      {/* Add Transaction Section */}
+      <div style={{ marginBottom: "1rem", fontWeight: "bold" }}>
+        <h2 style={{ fontSize: "22px" }}>Add Transaction</h2>
+        <select value={newTx.type} onChange={(e) => setNewTx({ ...newTx, type: e.target.value })} style={compactInput}>
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+        <select value={newTx.category} onChange={(e) => setNewTx({ ...newTx, category: e.target.value })} style={compactInput}>
+          {(newTx.type === "expense" ? expenses : income).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+        </select>
+        <input type="text" placeholder="Description" value={newTx.description} onChange={(e)=>setNewTx({...newTx, description:e.target.value})} style={{ ...compactInput, width:"200px" }} />
+        <input type="number" placeholder="Amount" value={newTx.amount} onChange={(e)=>setNewTx({...newTx, amount:Number(e.target.value)})} style={compactInput} />
+        <input type="date" value={newTx.date} onChange={(e)=>setNewTx({...newTx, date:e.target.value})} style={compactInput} />
+        <button onClick={addTransaction} style={{ fontWeight: "bold", fontSize: "18px", marginLeft:"5px" }}>Add</button>
+      </div>
 
-      {/* Expenses & Income tables */}
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Expenses</h2>
+      {/* Quick Add Section */}
+      <div style={{ marginBottom: "1rem", fontWeight: "bold" }}>
+        <h2 style={{ fontSize: "22px" }}>Quick Add</h2>
+        <div>
+          <h3>Expense Quick Adds</h3>
+          {quickAdds.expense.map((q,i)=>(
+            <div key={i}>
+              <button onClick={()=>handleQuickAdd(q,"expense")}>{q.description} – {formatCurrency(q.amount)}</button>
+              <button onClick={()=>{setQuickAdds({...quickAdds,expense:quickAdds.expense.filter((_,idx)=>idx!==i)})}}>Delete</button>
+            </div>
+          ))}
+          <button onClick={()=>setQuickAdds({...quickAdds,expense:[...quickAdds.expense,{category:"Rent",description:"Rent",amount:1184}]})}>+ Add Quick Expense</button>
+        </div>
+        <div>
+          <h3>Income Quick Adds</h3>
+          {quickAdds.income.map((q,i)=>(
+            <div key={i}>
+              <button onClick={()=>handleQuickAdd(q,"income")}>{q.description} – {formatCurrency(q.amount)}</button>
+              <button onClick={()=>{setQuickAdds({...quickAdds,income:quickAdds.income.filter((_,idx)=>idx!==i)})}}>Delete</button>
+            </div>
+          ))}
+          <button onClick={()=>setQuickAdds({...quickAdds,income:[...quickAdds.income,{category:"GSA",description:"GSA",amount:0}]})}>+ Add Quick Income</button>
+        </div>
+      </div>
+
+      {/* Expenses & Income Tables */}
+      <div style={{ display:"flex", gap:"2rem", flexWrap:"wrap" }}>
+        <div style={{ flex:1 }}>
+          <h2 style={{ fontSize:"20px", fontWeight:"bold" }}>Expenses</h2>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -163,23 +203,19 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {expenseTotals.map((e, idx)=>(
+              {expenseTotals.map((e,idx)=>(
                 <tr key={idx}>
-                  <td style={thTdStyle}><input type="text" value={e.name} onChange={(ev)=>{
-                    const newExpenses = [...expenses]; newExpenses[idx].name = ev.target.value; setExpenses(newExpenses);
-                  }} style={nameInput} /></td>
-                  <td style={thTdStyle}><input type="number" value={e.budget} onChange={(ev)=>{
-                    const newExpenses = [...expenses]; newExpenses[idx].budget = Number(ev.target.value); setExpenses(newExpenses);
-                  }} style={compactInput} /></td>
-                  <td style={thTdStyle}>{formatCurrency(e.spent)}</td>
+                  <td><input type="text" value={e.name} onChange={(ev)=>{const newEx=[...expenses];newEx[idx].name=ev.target.value; setExpenses(newEx)}} style={nameInput} /></td>
+                  <td><input type="number" value={e.budget} onChange={(ev)=>{const newEx=[...expenses];newEx[idx].budget=Number(ev.target.value); setExpenses(newEx)}} style={compactInput} /></td>
+                  <td>{formatCurrency(e.spent)}</td>
                 </tr>
               ))}
+              <tr><td colSpan={3}><button onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])} style={{fontWeight:"bold"}}>+ Add Expense Category</button></td></tr>
             </tbody>
           </table>
         </div>
-
-        <div style={{ flex: 1 }}>
-          <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Income</h2>
+        <div style={{ flex:1 }}>
+          <h2 style={{ fontSize:"20px", fontWeight:"bold" }}>Income</h2>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -189,17 +225,14 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {incomeTotals.map((i, idx)=>(
+              {incomeTotals.map((i,idx)=>(
                 <tr key={idx}>
-                  <td style={thTdStyle}><input type="text" value={i.name} onChange={(ev)=>{
-                    const newIncome=[...income]; newIncome[idx].name=ev.target.value; setIncome(newIncome);
-                  }} style={nameInput}/></td>
-                  <td style={thTdStyle}><input type="number" value={i.budget} onChange={(ev)=>{
-                    const newIncome=[...income]; newIncome[idx].budget=Number(ev.target.value); setIncome(newIncome);
-                  }} style={compactInput}/></td>
-                  <td style={thTdStyle}>{formatCurrency(i.received)}</td>
+                  <td><input type="text" value={i.name} onChange={(ev)=>{const newIn=[...income];newIn[idx].name=ev.target.value; setIncome(newIn)}} style={nameInput} /></td>
+                  <td><input type="number" value={i.budget} onChange={(ev)=>{const newIn=[...income];newIn[idx].budget=Number(ev.target.value); setIncome(newIn)}} style={compactInput} /></td>
+                  <td>{formatCurrency(i.received)}</td>
                 </tr>
               ))}
+              <tr><td colSpan={3}><button onClick={()=>setIncome([...income,{name:"New Income",budget:0}])} style={{fontWeight:"bold"}}>+ Add Income Category</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -208,9 +241,7 @@ export default function Home() {
       {/* Grouped Totals */}
       <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Grouped Totals by Description</h2>
       <table style={tableStyle}>
-        <thead>
-          <tr><th style={thTdStyle}>Description</th><th style={thTdStyle}>Total</th></tr>
-        </thead>
+        <thead><tr><th style={thTdStyle}>Description</th><th style={thTdStyle}>Total</th></tr></thead>
         <tbody>
           {Object.entries(groupedDescriptionTotals).map(([desc,total])=>(
             <tr key={desc}><td style={thTdStyle}>{desc}</td><td style={thTdStyle}>{formatCurrency(total)}</td></tr>
@@ -222,13 +253,7 @@ export default function Home() {
       <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Transaction History</h2>
       <table style={tableStyle}>
         <thead>
-          <tr>
-            <th style={thTdStyle}>Date</th>
-            <th style={thTdStyle}>Type</th>
-            <th style={thTdStyle}>Category</th>
-            <th style={thTdStyle}>Description</th>
-            <th style={thTdStyle}>Amount</th>
-          </tr>
+          <tr><th style={thTdStyle}>Date</th><th style={thTdStyle}>Type</th><th style={thTdStyle}>Category</th><th style={thTdStyle}>Description</th><th style={thTdStyle}>Amount</th></tr>
         </thead>
         <tbody>
           {transactions.map(tx=>(
