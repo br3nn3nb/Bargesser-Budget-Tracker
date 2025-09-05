@@ -38,6 +38,7 @@ export default function Home() {
   const [beginningBalance, setBeginningBalance] = useState(0);
   const [quickAdds, setQuickAdds] = useState({ expense: [], income: [] });
 
+  // Load data from localStorage
   useEffect(() => {
     const savedData = JSON.parse(localStorage.getItem(currentMonth));
     if (savedData) {
@@ -55,6 +56,7 @@ export default function Home() {
     }
   }, [currentMonth]);
 
+  // Save data to localStorage
   useEffect(() => {
     localStorage.setItem(
       currentMonth,
@@ -62,6 +64,7 @@ export default function Home() {
     );
   }, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
 
+  // Calculate totals
   const expenseTotals = expenses.map(e => ({
     ...e,
     total: transactions.filter(t => t.type === "expense" && t.category === e.name)
@@ -84,6 +87,7 @@ export default function Home() {
     groupedDescriptionTotals[t.description] += t.amount;
   });
 
+  // Add new transaction
   const addTransaction = () => {
     if (!newTx.category || !newTx.amount) return;
     const tx = { ...newTx, amount: Number(newTx.amount), id: Date.now() };
@@ -91,7 +95,8 @@ export default function Home() {
     setNewTx({ type: newTx.type, category: "", description: "", amount: 0, date: "" });
   };
 
-  const useQuickAdd = (q, type) => {
+  // **Handle Quick Add** - normal function (no hooks inside callback)
+  const handleQuickAdd = (q, type) => {
     const tx = {
       id: Date.now(),
       type,
@@ -101,6 +106,7 @@ export default function Home() {
       date: new Date().toISOString().split("T")[0],
     };
     setTransactions([tx, ...transactions]);
+
     if (type === "expense") {
       const idx = expenses.findIndex(e => e.name === q.category);
       if (idx !== -1) {
@@ -118,6 +124,7 @@ export default function Home() {
     }
   };
 
+  // Change month
   const changeMonth = (offset) => {
     const [year, month] = currentMonth.split("-").map(Number);
     const date = new Date(year, month - 1 + offset);
@@ -166,7 +173,7 @@ export default function Home() {
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
         {["expense", "income"].map(type => quickAdds[type].map((q, idx) => (
           <div key={`${type}-${idx}`} style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => useQuickAdd(q, type)}>{q.description} – ${q.amount} ({type})</button>
+            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => handleQuickAdd(q, type)}>{q.description} – ${q.amount} ({type})</button>
             <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => setQuickAdds({...quickAdds, [type]: quickAdds[type].filter((_, i) => i !== idx)})}>✕</button>
           </div>
         )))}
@@ -252,29 +259,24 @@ export default function Home() {
               </tr>
             </tbody>
           </table>
-
-          <h3 style={{ fontWeight:"bold", fontSize:"18px"}}>Grouped Transaction Totals</h3>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={thTdStyle}>Description</th>
-                <th style={thTdStyle}>Total Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(groupedDescriptionTotals).map(([desc, amt])=>(
-                <tr key={desc}>
-                  <td style={thTdStyle}>{desc}</td>
-                  <td style={thTdStyle}>{amt.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
 
+      {/* Grouped Description Totals */}
+      <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Grouped Totals by Description</h2>
+      <table style={tableStyle}>
+        <thead>
+          <tr><th style={thTdStyle}>Description</th><th style={thTdStyle}>Total</th></tr>
+        </thead>
+        <tbody>
+          {Object.entries(groupedDescriptionTotals).map(([desc,total])=>(
+            <tr key={desc}><td style={thTdStyle}>{desc}</td><td style={thTdStyle}>{total.toFixed(2)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
       {/* Transaction History */}
-      <h2 style={{ margin: "0.5rem 0", fontWeight:"bold", fontSize:"20px"}}>Transaction History</h2>
+      <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Transaction History</h2>
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -283,22 +285,21 @@ export default function Home() {
             <th style={thTdStyle}>Category</th>
             <th style={thTdStyle}>Description</th>
             <th style={thTdStyle}>Amount</th>
-            <th style={thTdStyle}>Delete</th>
           </tr>
         </thead>
         <tbody>
-          {transactions.map(t=>(
-            <tr key={t.id}>
-              <td style={thTdStyle}>{t.date}</td>
-              <td style={thTdStyle}>{t.type}</td>
-              <td style={thTdStyle}>{t.category}</td>
-              <td style={thTdStyle}>{t.description}</td>
-              <td style={thTdStyle}>{t.amount.toFixed(2)}</td>
-              <td style={thTdStyle}><button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setTransactions(transactions.filter(tx=>tx.id!==t.id))}>Delete</button></td>
+          {transactions.map(tx=>(
+            <tr key={tx.id}>
+              <td style={thTdStyle}>{tx.date}</td>
+              <td style={thTdStyle}>{tx.type}</td>
+              <td style={thTdStyle}>{tx.category}</td>
+              <td style={thTdStyle}>{tx.description}</td>
+              <td style={thTdStyle}>{tx.amount.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
       </table>
+
     </div>
   );
 }
