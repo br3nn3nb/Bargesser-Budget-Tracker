@@ -36,6 +36,7 @@ export default function Home() {
   const [beginningBalance, setBeginningBalance] = useState(0);
   const [quickAdds, setQuickAdds] = useState({ expense: [], income: [] });
   const [newTx, setNewTx] = useState({ type: "expense", category: "", description: "", amount: 0, date: "" });
+  const [quickAddNew, setQuickAddNew] = useState({ type: "expense", category: "", description: "", amount: 0 });
 
   useEffect(() => {
     const savedData = JSON.parse(localStorage.getItem(currentMonth));
@@ -83,7 +84,8 @@ export default function Home() {
     }
   });
 
-  const formatCurrency = (num) => "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatCurrency = (num) =>
+    "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const addTransaction = () => {
     if (!newTx.category || !newTx.amount) return;
@@ -93,21 +95,28 @@ export default function Home() {
   };
 
   const handleQuickAdd = (q, type) => {
-    const tx = { id: Date.now(), type, category: q.category, description: q.description, amount: q.amount, date: new Date().toISOString().split("T")[0] };
+    const tx = {
+      id: Date.now(),
+      type,
+      category: q.category,
+      description: q.description,
+      amount: Number(q.amount),
+      date: new Date().toISOString().split("T")[0],
+    };
     setTransactions([tx, ...transactions]);
 
     if (type === "expense") {
       const idx = expenses.findIndex(e => e.name === q.category);
       if (idx !== -1) {
         const newExpenses = [...expenses];
-        newExpenses[idx].budget += q.amount;
+        newExpenses[idx].budget += Number(q.amount);
         setExpenses(newExpenses);
       }
     } else {
       const idx = income.findIndex(i => i.name === q.category);
       if (idx !== -1) {
         const newIncome = [...income];
-        newIncome[idx].budget += q.amount;
+        newIncome[idx].budget += Number(q.amount);
         setIncome(newIncome);
       }
     }
@@ -128,28 +137,33 @@ export default function Home() {
 
   return (
     <div style={{ padding: "0.5rem", backgroundColor: "white", color: "black", fontFamily: "Arial, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Month Navigation */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
         <button style={{ fontWeight: "bold", fontSize: "20px" }} onClick={() => changeMonth(-1)}>◀</button>
-        <h1 style={{ textAlign: "center", fontSize: "30px", fontWeight: "bold", margin: "0" }}>Monthly Budget – {monthTitle}</h1>
+        <h1 style={{ textAlign: "center", fontSize: "30px", fontWeight: "bold", margin: "0" }}>
+          Monthly Budget – {monthTitle}
+        </h1>
         <button style={{ fontWeight: "bold", fontSize: "20px" }} onClick={() => changeMonth(1)}>▶</button>
       </div>
 
+      {/* Beginning Balance */}
       <div style={{ margin: "0.5rem 0" }}>
-        <label style={{ fontWeight: "bold", fontSize: "20px", marginRight: "0.5rem" }}>Beginning Balance: </label>
+        <label style={{ fontWeight: "bold", fontSize: "20px", marginRight: "0.5rem" }}>
+          Beginning Balance:
+        </label>
         <input
           type="number"
           value={beginningBalance}
           onChange={(e) => setBeginningBalance(Number(e.target.value))}
           style={{ fontWeight: "bold", fontSize: "20px", width: "150px", padding: "4px" }}
         />
-        <span style={{ fontWeight: "bold", fontSize: "20px", marginLeft: "0.5rem" }}>{formatCurrency(beginningBalance)}</span>
       </div>
 
       <h3 style={{ margin: "0.5rem 0 1rem", fontWeight: "bold", fontSize: "20px" }}>
         Current Balance: {formatCurrency(balance)}
       </h3>
 
-      {/* Add Transaction Section */}
+      {/* Transaction & Quick Add tabs */}
       <div style={{ marginBottom: "1rem", fontWeight: "bold" }}>
         <h2 style={{ fontSize: "22px" }}>Add Transaction</h2>
         <select value={newTx.type} onChange={(e) => setNewTx({ ...newTx, type: e.target.value })} style={compactInput}>
@@ -163,35 +177,46 @@ export default function Home() {
         <input type="number" placeholder="Amount" value={newTx.amount} onChange={(e)=>setNewTx({...newTx, amount:Number(e.target.value)})} style={compactInput} />
         <input type="date" value={newTx.date} onChange={(e)=>setNewTx({...newTx, date:e.target.value})} style={compactInput} />
         <button onClick={addTransaction} style={{ fontWeight: "bold", fontSize: "18px", marginLeft:"5px" }}>Add</button>
+
+        <h2 style={{ fontSize: "22px", marginTop:"1rem" }}>Quick Add</h2>
+        <div style={{ display:"flex", gap:"1rem", flexWrap:"wrap" }}>
+          <div>
+            <h3>Expense Quick Adds</h3>
+            {quickAdds.expense.map((q,i)=>(
+              <div key={i} style={{ marginBottom:"0.25rem" }}>
+                <button onClick={()=>handleQuickAdd(q,"expense")}>{q.description} – {formatCurrency(q.amount)}</button>
+                <button onClick={()=>{setQuickAdds({...quickAdds,expense:quickAdds.expense.filter((_,idx)=>idx!==i)})}}>Delete</button>
+              </div>
+            ))}
+            <div style={{ marginTop:"0.25rem" }}>
+              <input placeholder="Category" value={quickAddNew.category} onChange={e=>setQuickAddNew({...quickAddNew,category:e.target.value, type:"expense"})} style={compactInput} />
+              <input placeholder="Description" value={quickAddNew.description} onChange={e=>setQuickAddNew({...quickAddNew,description:e.target.value})} style={compactInput} />
+              <input placeholder="Amount" type="number" value={quickAddNew.amount} onChange={e=>setQuickAddNew({...quickAddNew,amount:Number(e.target.value)})} style={compactInput} />
+              <button onClick={()=>{setQuickAdds({...quickAdds,expense:[...quickAdds.expense,{...quickAddNew,type:"expense"}]}); setQuickAddNew({...quickAddNew,category:"",description:"",amount:0})}}>Add</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Income Quick Adds</h3>
+            {quickAdds.income.map((q,i)=>(
+              <div key={i} style={{ marginBottom:"0.25rem" }}>
+                <button onClick={()=>handleQuickAdd(q,"income")}>{q.description} – {formatCurrency(q.amount)}</button>
+                <button onClick={()=>{setQuickAdds({...quickAdds,income:quickAdds.income.filter((_,idx)=>idx!==i)})}}>Delete</button>
+              </div>
+            ))}
+            <div style={{ marginTop:"0.25rem" }}>
+              <input placeholder="Category" value={quickAddNew.category} onChange={e=>setQuickAddNew({...quickAddNew,category:e.target.value, type:"income"})} style={compactInput} />
+              <input placeholder="Description" value={quickAddNew.description} onChange={e=>setQuickAddNew({...quickAddNew,description:e.target.value})} style={compactInput} />
+              <input placeholder="Amount" type="number" value={quickAddNew.amount} onChange={e=>setQuickAddNew({...quickAddNew,amount:Number(e.target.value)})} style={compactInput} />
+              <button onClick={()=>{setQuickAdds({...quickAdds,income:[...quickAdds.income,{...quickAddNew,type:"income"}]}); setQuickAddNew({...quickAddNew,category:"",description:"",amount:0})}}>Add</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Add Section */}
-      <div style={{ marginBottom: "1rem", fontWeight: "bold" }}>
-        <h2 style={{ fontSize: "22px" }}>Quick Add</h2>
-        <div>
-          <h3>Expense Quick Adds</h3>
-          {quickAdds.expense.map((q,i)=>(
-            <div key={i}>
-              <button onClick={()=>handleQuickAdd(q,"expense")}>{q.description} – {formatCurrency(q.amount)}</button>
-              <button onClick={()=>{setQuickAdds({...quickAdds,expense:quickAdds.expense.filter((_,idx)=>idx!==i)})}}>Delete</button>
-            </div>
-          ))}
-          <button onClick={()=>setQuickAdds({...quickAdds,expense:[...quickAdds.expense,{category:"Rent",description:"Rent",amount:1184}]})}>+ Add Quick Expense</button>
-        </div>
-        <div>
-          <h3>Income Quick Adds</h3>
-          {quickAdds.income.map((q,i)=>(
-            <div key={i}>
-              <button onClick={()=>handleQuickAdd(q,"income")}>{q.description} – {formatCurrency(q.amount)}</button>
-              <button onClick={()=>{setQuickAdds({...quickAdds,income:quickAdds.income.filter((_,idx)=>idx!==i)})}}>Delete</button>
-            </div>
-          ))}
-          <button onClick={()=>setQuickAdds({...quickAdds,income:[...quickAdds.income,{category:"GSA",description:"GSA",amount:0}]})}>+ Add Quick Income</button>
-        </div>
-      </div>
-
-      {/* Expenses & Income Tables */}
+      {/* Expense & Income Tables */}
       <div style={{ display:"flex", gap:"2rem", flexWrap:"wrap" }}>
+        {/* Expenses Table */}
         <div style={{ flex:1 }}>
           <h2 style={{ fontSize:"20px", fontWeight:"bold" }}>Expenses</h2>
           <table style={tableStyle}>
@@ -206,14 +231,18 @@ export default function Home() {
               {expenseTotals.map((e,idx)=>(
                 <tr key={idx}>
                   <td><input type="text" value={e.name} onChange={(ev)=>{const newEx=[...expenses];newEx[idx].name=ev.target.value; setExpenses(newEx)}} style={nameInput} /></td>
-                  <td><input type="number" value={e.budget} onChange={(ev)=>{const newEx=[...expenses];newEx[idx].budget=Number(ev.target.value); setExpenses(newEx)}} style={compactInput} /></td>
+                  <td>{formatCurrency(e.budget)}</td>
                   <td>{formatCurrency(e.spent)}</td>
                 </tr>
               ))}
-              <tr><td colSpan={3}><button onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])} style={{fontWeight:"bold"}}>+ Add Expense Category</button></td></tr>
+              <tr>
+                <td colSpan={3}><button onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])} style={{fontWeight:"bold"}}>+ Add Expense Category</button></td>
+              </tr>
             </tbody>
           </table>
         </div>
+
+        {/* Income Table */}
         <div style={{ flex:1 }}>
           <h2 style={{ fontSize:"20px", fontWeight:"bold" }}>Income</h2>
           <table style={tableStyle}>
@@ -228,17 +257,19 @@ export default function Home() {
               {incomeTotals.map((i,idx)=>(
                 <tr key={idx}>
                   <td><input type="text" value={i.name} onChange={(ev)=>{const newIn=[...income];newIn[idx].name=ev.target.value; setIncome(newIn)}} style={nameInput} /></td>
-                  <td><input type="number" value={i.budget} onChange={(ev)=>{const newIn=[...income];newIn[idx].budget=Number(ev.target.value); setIncome(newIn)}} style={compactInput} /></td>
+                  <td>{formatCurrency(i.budget)}</td>
                   <td>{formatCurrency(i.received)}</td>
                 </tr>
               ))}
-              <tr><td colSpan={3}><button onClick={()=>setIncome([...income,{name:"New Income",budget:0}])} style={{fontWeight:"bold"}}>+ Add Income Category</button></td></tr>
+              <tr>
+                <td colSpan={3}><button onClick={()=>setIncome([...income,{name:"New Income",budget:0}])} style={{fontWeight:"bold"}}>+ Add Income Category</button></td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Grouped Totals */}
+      {/* Grouped Totals by Description */}
       <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Grouped Totals by Description</h2>
       <table style={tableStyle}>
         <thead><tr><th style={thTdStyle}>Description</th><th style={thTdStyle}>Total</th></tr></thead>
@@ -267,7 +298,6 @@ export default function Home() {
           ))}
         </tbody>
       </table>
-
     </div>
   );
 }
