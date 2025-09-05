@@ -143,8 +143,19 @@ export default function Home() {
         <button style={{ fontWeight: "bold", fontSize: "20px" }} onClick={() => changeMonth(1)}>▶</button>
       </div>
 
-      <h3 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Beginning Balance: ${beginningBalance.toFixed(2)}</h3>
-      <h3 style={{ margin: "0.5rem 0 1rem", fontWeight: "bold", fontSize: "20px" }}>Current Balance: ${balance.toFixed(2)}</h3>
+      {/* Beginning & Current Balance */}
+      <div style={{ margin: "0.5rem 0" }}>
+        <label style={{ fontWeight: "bold", fontSize: "20px", marginRight: "0.5rem" }}>Beginning Balance: </label>
+        <input
+          type="number"
+          value={beginningBalance}
+          onChange={(e) => setBeginningBalance(Number(e.target.value))}
+          style={{ fontWeight: "bold", fontSize: "20px", width: "150px", padding: "4px" }}
+        />
+      </div>
+      <h3 style={{ margin: "0.5rem 0 1rem", fontWeight: "bold", fontSize: "20px" }}>
+        Current Balance: ${balance.toFixed(2)}
+      </h3>
 
       {/* Add Transaction */}
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "center" }}>
@@ -185,9 +196,9 @@ export default function Home() {
           }}>+ Add Quick Add</button>
       </div>
 
-      {/* Expenses & Income side by side */}
+      {/* Expenses & Income tables side by side */}
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
-        {/* Expenses */}
+        {/* Expenses table */}
         <div style={{ flex: 1 }}>
           <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Expenses</h2>
           <table style={tableStyle}>
@@ -217,7 +228,7 @@ export default function Home() {
           </table>
         </div>
 
-        {/* Income */}
+        {/* Income table */}
         <div style={{ flex: 1 }}>
           <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Income</h2>
           <table style={tableStyle}>
