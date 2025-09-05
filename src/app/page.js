@@ -64,24 +64,23 @@ export default function Home() {
     );
   }, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
 
-  // Calculate totals
-  const expenseTotals = expenses.map(e => {
-    const spent = transactions.filter(t => t.type === "expense" && t.category === e.name)
-                              .reduce((sum, t) => sum + t.amount, 0);
-    return { ...e, spent };
-  });
-
-  const incomeTotals = income.map(i => {
-    const received = transactions.filter(t => t.type === "income" && t.category === i.name)
-                                 .reduce((sum, t) => sum + t.amount, 0);
-    return { ...i, received };
-  });
-
-  const totalIncome = incomeTotals.reduce((sum, i) => sum + i.received, 0);
-  const totalExpenses = expenseTotals.reduce((sum, e) => sum + e.spent, 0);
+  // Totals for headers
+  const totalExpenses = transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
   const balance = beginningBalance + totalIncome - totalExpenses;
 
-  // Grouped totals only for transactions with description
+  // Category-level totals
+  const expenseTotals = expenses.map(e => ({
+    ...e,
+    spent: transactions.filter(t => t.type === "expense" && t.category === e.name).reduce((sum, t) => sum + t.amount, 0)
+  }));
+
+  const incomeTotals = income.map(i => ({
+    ...i,
+    received: transactions.filter(t => t.type === "income" && t.category === i.name).reduce((sum, t) => sum + t.amount, 0)
+  }));
+
+  // Grouped totals by description (only non-empty)
   const groupedDescriptionTotals = {};
   transactions.forEach(t => {
     if (t.description) {
@@ -90,7 +89,7 @@ export default function Home() {
     }
   });
 
-  // Add new transaction
+  // Add transaction
   const addTransaction = () => {
     if (!newTx.category || !newTx.amount) return;
     const tx = { ...newTx, amount: Number(newTx.amount), id: Date.now() };
@@ -98,16 +97,9 @@ export default function Home() {
     setNewTx({ type: newTx.type, category: "", description: "", amount: 0, date: "" });
   };
 
-  // Handle Quick Add
+  // Quick Add
   const handleQuickAdd = (q, type) => {
-    const tx = {
-      id: Date.now(),
-      type,
-      category: q.category,
-      description: q.description,
-      amount: q.amount,
-      date: new Date().toISOString().split("T")[0],
-    };
+    const tx = { id: Date.now(), type, category: q.category, description: q.description, amount: q.amount, date: new Date().toISOString().split("T")[0] };
     setTransactions([tx, ...transactions]);
 
     if (type === "expense") {
@@ -134,11 +126,9 @@ export default function Home() {
     setCurrentMonth(getMonthKey(date));
   };
 
-  const monthTitle = new Date(`${currentMonth}-01`).toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthTitle = new Date(`${currentMonth}-01`).toLocaleString("default", { month: "long", year: "numeric" });
 
+  // Styles
   const tableStyle = { borderCollapse: "collapse", width: "100%", marginBottom: "0.5rem", fontSize: "18px" };
   const thTdStyle = { border: "1px solid black", padding: "6px", textAlign: "left", fontWeight: "bold", fontSize: "18px" };
   const compactInput = { width: "100px", fontSize: "18px", padding: "4px", fontWeight: "bold" };
@@ -156,7 +146,7 @@ export default function Home() {
       <h3 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Beginning Balance: ${beginningBalance.toFixed(2)}</h3>
       <h3 style={{ margin: "0.5rem 0 1rem", fontWeight: "bold", fontSize: "20px" }}>Current Balance: ${balance.toFixed(2)}</h3>
 
-      {/* Add Transaction Form */}
+      {/* Add Transaction */}
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "center" }}>
         <select value={newTx.type} onChange={(e) => setNewTx({ ...newTx, type: e.target.value })} style={{ fontWeight: "bold", fontSize: "18px" }}>
           <option value="expense">Expense</option>
@@ -175,12 +165,12 @@ export default function Home() {
       {/* Quick Add */}
       <h2 style={{ fontWeight: "bold", fontSize: "22px", marginBottom: "0.5rem" }}>Quick Add</h2>
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-        {["expense", "income"].map(type => quickAdds[type].map((q, idx) => (
+        {["expense","income"].map(type => quickAdds[type].map((q, idx) => (
           <div key={`${type}-${idx}`} style={{ display: "flex", gap: "2px", alignItems: "center" }}>
             <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => handleQuickAdd(q, type)}>
               {q.description} – ${q.amount} ({type})
             </button>
-            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => setQuickAdds({...quickAdds, [type]: quickAdds[type].filter((_, i) => i !== idx)})}>✕</button>
+            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => setQuickAdds({...quickAdds, [type]: quickAdds[type].filter((_,i)=>i!==idx)})}>✕</button>
           </div>
         )))}
         <button style={{ fontWeight: "bold", fontSize: "18px" }}
@@ -205,12 +195,11 @@ export default function Home() {
               <tr>
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
-                <th style={thTdStyle}>Spent</th>
-                <th style={thTdStyle}>Remaining</th>
+                <th style={thTdStyle}>Spent ${totalExpenses.toFixed(2)}</th>
               </tr>
             </thead>
             <tbody>
-              {expenseTotals.map((e, idx) => (
+              {expenseTotals.map((e, idx)=>(
                 <tr key={idx}>
                   <td style={thTdStyle}><input type="text" value={e.name} onChange={(ev)=>{
                     const newExpenses = [...expenses]; newExpenses[idx].name = ev.target.value; setExpenses(newExpenses);
@@ -219,10 +208,9 @@ export default function Home() {
                     const newExpenses = [...expenses]; newExpenses[idx].budget = Number(ev.target.value); setExpenses(newExpenses);
                   }} style={compactInput} /></td>
                   <td style={thTdStyle}>{e.spent.toFixed(2)}</td>
-                  <td style={thTdStyle}>{(e.budget - e.spent).toFixed(2)}</td>
                 </tr>
               ))}
-              <tr><td colSpan="4" style={{textAlign:"center", padding:"4px"}}>
+              <tr><td colSpan="3" style={{textAlign:"center", padding:"4px"}}>
                 <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])}>+ Add Expense Category</button>
               </td></tr>
             </tbody>
@@ -237,8 +225,7 @@ export default function Home() {
               <tr>
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
-                <th style={thTdStyle}>Received</th>
-                <th style={thTdStyle}>Remaining</th>
+                <th style={thTdStyle}>Received ${totalIncome.toFixed(2)}</th>
               </tr>
             </thead>
             <tbody>
@@ -251,10 +238,9 @@ export default function Home() {
                     const newIncome=[...income]; newIncome[idx].budget=Number(ev.target.value); setIncome(newIncome);
                   }} style={compactInput}/></td>
                   <td style={thTdStyle}>{i.received.toFixed(2)}</td>
-                  <td style={thTdStyle}>{(i.budget - i.received).toFixed(2)}</td>
                 </tr>
               ))}
-              <tr><td colSpan="4" style={{textAlign:"center", padding:"4px"}}>
+              <tr><td colSpan="3" style={{textAlign:"center", padding:"4px"}}>
                 <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setIncome([...income,{name:"New Income",budget:0}])}>+ Add Income Category</button>
               </td></tr>
             </tbody>
