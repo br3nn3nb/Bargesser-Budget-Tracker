@@ -65,26 +65,29 @@ export default function Home() {
   }, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
 
   // Calculate totals
-  const expenseTotals = expenses.map(e => ({
-    ...e,
-    total: transactions.filter(t => t.type === "expense" && t.category === e.name)
-                       .reduce((sum, t) => sum + t.amount, 0)
-  }));
+  const expenseTotals = expenses.map(e => {
+    const spent = transactions.filter(t => t.type === "expense" && t.category === e.name)
+                              .reduce((sum, t) => sum + t.amount, 0);
+    return { ...e, spent };
+  });
 
-  const incomeTotals = income.map(i => ({
-    ...i,
-    total: transactions.filter(t => t.type === "income" && t.category === i.name)
-                       .reduce((sum, t) => sum + t.amount, 0)
-  }));
+  const incomeTotals = income.map(i => {
+    const received = transactions.filter(t => t.type === "income" && t.category === i.name)
+                                 .reduce((sum, t) => sum + t.amount, 0);
+    return { ...i, received };
+  });
 
-  const totalIncome = incomeTotals.reduce((sum, i) => sum + i.total, 0);
-  const totalExpenses = expenseTotals.reduce((sum, e) => sum + e.total, 0);
+  const totalIncome = incomeTotals.reduce((sum, i) => sum + i.received, 0);
+  const totalExpenses = expenseTotals.reduce((sum, e) => sum + e.spent, 0);
   const balance = beginningBalance + totalIncome - totalExpenses;
 
+  // Grouped totals only for transactions with description
   const groupedDescriptionTotals = {};
   transactions.forEach(t => {
-    if (!groupedDescriptionTotals[t.description]) groupedDescriptionTotals[t.description] = 0;
-    groupedDescriptionTotals[t.description] += t.amount;
+    if (t.description) {
+      if (!groupedDescriptionTotals[t.description]) groupedDescriptionTotals[t.description] = 0;
+      groupedDescriptionTotals[t.description] += t.amount;
+    }
   });
 
   // Add new transaction
@@ -95,7 +98,7 @@ export default function Home() {
     setNewTx({ type: newTx.type, category: "", description: "", amount: 0, date: "" });
   };
 
-  // **Handle Quick Add** - normal function (no hooks inside callback)
+  // Handle Quick Add
   const handleQuickAdd = (q, type) => {
     const tx = {
       id: Date.now(),
@@ -143,6 +146,7 @@ export default function Home() {
 
   return (
     <div style={{ padding: "0.5rem", backgroundColor: "white", color: "black", fontFamily: "Arial, sans-serif" }}>
+      {/* Month navigation and title */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <button style={{ fontWeight: "bold", fontSize: "20px" }} onClick={() => changeMonth(-1)}>◀</button>
         <h1 style={{ textAlign: "center", fontSize: "30px", fontWeight: "bold", margin: "0" }}>Monthly Budget – {monthTitle}</h1>
@@ -168,12 +172,14 @@ export default function Home() {
         <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={addTransaction}>Add</button>
       </div>
 
-      {/* Quick Add Tab */}
+      {/* Quick Add */}
       <h2 style={{ fontWeight: "bold", fontSize: "22px", marginBottom: "0.5rem" }}>Quick Add</h2>
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
         {["expense", "income"].map(type => quickAdds[type].map((q, idx) => (
           <div key={`${type}-${idx}`} style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => handleQuickAdd(q, type)}>{q.description} – ${q.amount} ({type})</button>
+            <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => handleQuickAdd(q, type)}>
+              {q.description} – ${q.amount} ({type})
+            </button>
             <button style={{ fontWeight: "bold", fontSize: "18px" }} onClick={() => setQuickAdds({...quickAdds, [type]: quickAdds[type].filter((_, i) => i !== idx)})}>✕</button>
           </div>
         )))}
@@ -189,8 +195,9 @@ export default function Home() {
           }}>+ Add Quick Add</button>
       </div>
 
-      {/* Expenses and Income side by side */}
+      {/* Expenses & Income side by side */}
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+        {/* Expenses */}
         <div style={{ flex: 1 }}>
           <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Expenses</h2>
           <table style={tableStyle}>
@@ -199,33 +206,30 @@ export default function Home() {
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
                 <th style={thTdStyle}>Spent</th>
+                <th style={thTdStyle}>Remaining</th>
               </tr>
             </thead>
             <tbody>
-              {expenses.map((e, idx) => (
+              {expenseTotals.map((e, idx) => (
                 <tr key={idx}>
-                  <td style={thTdStyle}>
-                    <input type="text" value={e.name} onChange={(ev)=>{
-                      const newExpenses = [...expenses]; newExpenses[idx].name = ev.target.value; setExpenses(newExpenses);
-                    }} style={nameInput} />
-                  </td>
-                  <td style={thTdStyle}>
-                    <input type="number" value={e.budget} onChange={(ev)=>{
-                      const newExpenses = [...expenses]; newExpenses[idx].budget = Number(ev.target.value); setExpenses(newExpenses);
-                    }} style={compactInput} />
-                  </td>
-                  <td style={thTdStyle}>{transactions.filter(t=>t.type==="expense"&&t.category===e.name).reduce((sum,t)=>sum+t.amount,0).toFixed(2)}</td>
+                  <td style={thTdStyle}><input type="text" value={e.name} onChange={(ev)=>{
+                    const newExpenses = [...expenses]; newExpenses[idx].name = ev.target.value; setExpenses(newExpenses);
+                  }} style={nameInput} /></td>
+                  <td style={thTdStyle}><input type="number" value={e.budget} onChange={(ev)=>{
+                    const newExpenses = [...expenses]; newExpenses[idx].budget = Number(ev.target.value); setExpenses(newExpenses);
+                  }} style={compactInput} /></td>
+                  <td style={thTdStyle}>{e.spent.toFixed(2)}</td>
+                  <td style={thTdStyle}>{(e.budget - e.spent).toFixed(2)}</td>
                 </tr>
               ))}
-              <tr>
-                <td colSpan="3" style={{textAlign:"center", padding:"4px"}}>
-                  <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])}>+ Add Expense Category</button>
-                </td>
-              </tr>
+              <tr><td colSpan="4" style={{textAlign:"center", padding:"4px"}}>
+                <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setExpenses([...expenses,{name:"New Expense",budget:0}])}>+ Add Expense Category</button>
+              </td></tr>
             </tbody>
           </table>
         </div>
 
+        {/* Income */}
         <div style={{ flex: 1 }}>
           <h2 style={{ margin: "0.5rem 0", fontWeight: "bold", fontSize: "20px" }}>Income</h2>
           <table style={tableStyle}>
@@ -234,35 +238,31 @@ export default function Home() {
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
                 <th style={thTdStyle}>Received</th>
+                <th style={thTdStyle}>Remaining</th>
               </tr>
             </thead>
             <tbody>
-              {income.map((i, idx)=>(
+              {incomeTotals.map((i, idx)=>(
                 <tr key={idx}>
-                  <td style={thTdStyle}>
-                    <input type="text" value={i.name} onChange={(ev)=>{
-                      const newIncome=[...income]; newIncome[idx].name=ev.target.value; setIncome(newIncome);
-                    }} style={nameInput}/>
-                  </td>
-                  <td style={thTdStyle}>
-                    <input type="number" value={i.budget} onChange={(ev)=>{
-                      const newIncome=[...income]; newIncome[idx].budget=Number(ev.target.value); setIncome(newIncome);
-                    }} style={compactInput}/>
-                  </td>
-                  <td style={thTdStyle}>{transactions.filter(t=>t.type==="income"&&t.category===i.name).reduce((sum,t)=>sum+t.amount,0).toFixed(2)}</td>
+                  <td style={thTdStyle}><input type="text" value={i.name} onChange={(ev)=>{
+                    const newIncome=[...income]; newIncome[idx].name=ev.target.value; setIncome(newIncome);
+                  }} style={nameInput}/></td>
+                  <td style={thTdStyle}><input type="number" value={i.budget} onChange={(ev)=>{
+                    const newIncome=[...income]; newIncome[idx].budget=Number(ev.target.value); setIncome(newIncome);
+                  }} style={compactInput}/></td>
+                  <td style={thTdStyle}>{i.received.toFixed(2)}</td>
+                  <td style={thTdStyle}>{(i.budget - i.received).toFixed(2)}</td>
                 </tr>
               ))}
-              <tr>
-                <td colSpan="3" style={{textAlign:"center", padding:"4px"}}>
-                  <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setIncome([...income,{name:"New Income",budget:0}])}>+ Add Income Category</button>
-                </td>
-              </tr>
+              <tr><td colSpan="4" style={{textAlign:"center", padding:"4px"}}>
+                <button style={{fontWeight:"bold", fontSize:"18px"}} onClick={()=>setIncome([...income,{name:"New Income",budget:0}])}>+ Add Income Category</button>
+              </td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Grouped Description Totals */}
+      {/* Grouped Totals */}
       <h2 style={{ fontWeight:"bold", fontSize:"20px" }}>Grouped Totals by Description</h2>
       <table style={tableStyle}>
         <thead>
