@@ -246,7 +246,8 @@ export default function Page() {
   // Month navigation
   const goMonth = offset => {
     const [y, m] = currentMonth.split("-").map(Number);
-    const date = new Date(y, m - 1 + offset);
+    // Force to the 1st day of the month to prevent rollover issues
+    const date = new Date(y, m - 1 + offset, 1);
     setCurrentMonth(getMonthKey(date));
   };
 
@@ -303,7 +304,11 @@ export default function Page() {
       {/* Search / Sort / Import / Export */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
         <input placeholder="Search transactions..." value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 260, padding: 6, fontWeight: 700 }} />
-        <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={{ ...smallInput }}>
+        <select
+          value={sortKey}
+          onChange={e => setSortKey(e.target.value)}
+          style={{ ...smallInput, width: 160 }}
+        >
           <option value="date">Sort: Date</option>
           <option value="amount">Sort: Amount</option>
           <option value="category">Sort: Category</option>
@@ -314,15 +319,6 @@ export default function Page() {
           <option value="expense">Expenses</option>
           <option value="income">Income</option>
         </select>
-
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
-          <label style={{ fontWeight: 700, cursor: "pointer" }}>
-            Import
-            <input type="file" accept="application/json" onChange={importJSON} style={{ display: "none" }} />
-          </label>
-        </div>
-      </div>
 
       {/* Add Transaction & Quick Add area (spaced) */}
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start", marginBottom: 14, flexWrap: "wrap" }}>
@@ -344,7 +340,12 @@ export default function Page() {
 
             <input placeholder="Description" value={newTx.description} onChange={e => setNewTx({ ...newTx, description: e.target.value })} style={{ width: 260, padding: 6, fontWeight: 700 }} />
             <input placeholder="Amount" type="number" value={newTx.amount} onChange={e => setNewTx({ ...newTx, amount: e.target.value })} style={smallInput} />
-            <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} style={smallInput} />
+            <input
+              type="date"
+              value={newTx.date}
+              onChange={e => setNewTx({ ...newTx, date: e.target.value })}
+              style={{ ...smallInput, width: 160 }}
+            />
             <button onClick={addTransaction} style={{ fontWeight: 900, padding: "8px 12px" }}>Add</button>
           </div>
         </div>
@@ -561,3 +562,11 @@ export default function Page() {
     </div>
   );
 }
+{/* Export / Import buttons at bottom */}
+<div style={{ marginTop: 20, display: "flex", gap: 12 }}>
+  <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
+  <label style={{ fontWeight: 700, cursor: "pointer" }}>
+    Import
+    <input type="file" accept="application/json" onChange={importJSON} style={{ display: "none" }} />
+  </label>
+</div>
