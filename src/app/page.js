@@ -319,7 +319,7 @@ export default function Page() {
           <option value="expense">Expenses</option>
           <option value="income">Income</option>
         </select>
-
+        </div> {/* <-- add this to close Search / Sort / Import / Export */}
       {/* Add Transaction & Quick Add area (spaced) */}
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start", marginBottom: 14, flexWrap: "wrap" }}>
         {/* Add Transaction */}
@@ -527,56 +527,43 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Transaction History */}
-<div style={{ marginTop: 20 }}>
-  <h2 style={{ fontSize: 22, fontWeight: 700 }}>Transaction History</h2>
-  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-    <thead>
-      <tr>
-        <th style={thTdStyle}>Date</th>
-        <th style={thTdStyle}>Type</th>
-        <th style={thTdStyle}>Category</th>
-        <th style={thTdStyle}>Description</th>
-        <th style={thTdStyle}>Amount</th>
-        <th style={thTdStyle}>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filteredTransactions.length === 0 ? (
-        <tr>
-          <td style={thTdStyle} colSpan={6}>No transactions</td>
-        </tr>
-      ) : (
-        filteredTransactions.map(tx => (
-          <tr key={tx.id}>
-            <td style={thTdStyle}>{tx.date}</td>
-            <td style={thTdStyle}>{tx.type}</td>
-            <td style={thTdStyle}>{tx.category}</td>
-            <td style={thTdStyle}>{tx.description}</td>
-            <td style={thTdStyle}>{formatCurrency(tx.amount)}</td>
-            <td style={thTdStyle}>
-              <button onClick={() => deleteTransaction(tx.id)}>Delete</button>
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div> {/* Transaction History ends */}
+            {/* Transaction History */}
+      <div style={{ marginTop: 20 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700 }}>Transaction History</h2>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={thTdStyle}>Date</th>
+              <th style={thTdStyle}>Type</th>
+              <th style={thTdStyle}>Category</th>
+              <th style={thTdStyle}>Description</th>
+              <th style={thTdStyle}>Amount</th>
+              <th style={thTdStyle}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTransactions.length === 0 ? (
+              <tr>
+                <td style={thTdStyle} colSpan={6}>No transactions</td>
+              </tr>
+            ) : (
+              filteredTransactions.map(tx => (
+                <tr key={tx.id}>
+                  <td style={thTdStyle}>{tx.date}</td>
+                  <td style={thTdStyle}>{tx.type}</td>
+                  <td style={thTdStyle}>{tx.category}</td>
+                  <td style={thTdStyle}>{tx.description}</td>
+                  <td style={thTdStyle}>{formatCurrency(tx.amount)}</td>
+                  <td style={thTdStyle}>
+                    <button onClick={() => deleteTransaction(tx.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div> {/* Transaction History ends */}
 
-{/* Export / Import buttons at bottom */}
-<div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-  <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
-  <label style={{ fontWeight: 700, cursor: "pointer" }}>
-    Import
-    <input
-      type="file"
-      accept="application/json"
-      onChange={importJSON}
-      style={{ display: "none" }}
-    />
-  </label>
-</div>
-</div>   {/* Main wrapper ends */}
+    </div> {/* Main wrapper ends */}
   );
-}
+} // End of Page component
