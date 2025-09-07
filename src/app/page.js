@@ -527,7 +527,7 @@ export default function Page() {
         </div>
       </div>
 
-            {/* Transaction History */}
+                       {/* Transaction History */}
       <div style={{ marginTop: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700 }}>Transaction History</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -562,8 +562,10 @@ export default function Page() {
             )}
           </tbody>
         </table>
-      </div> {/* Transaction History ends */}
+        {/* Transaction History ends */}
+      </div>
 
-    </div> {/* Main wrapper ends */}
+      {/* Main wrapper ends */}
+    </div>
   );
 } // End of Page component
