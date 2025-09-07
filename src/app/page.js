@@ -45,11 +45,18 @@ const defaultIncome = [
 
 export default function Page() {
   // ---- State
-const [currentMonth, setCurrentMonth] = useState(() => {
-  // Check if there's a saved month in localStorage
-  const saved = localStorage.getItem("lastViewedMonth");
-  return saved || getMonthKey(); // fallback to current month
-});
+const [currentMonth, setCurrentMonth] = useState(null);
+
+useEffect(() => {
+  // Only runs in the browser
+  const saved = localStorage.getItem("lastMonth");
+  const monthKey = saved || getMonthKey(); // fallback to current month
+  setCurrentMonth(monthKey);
+}, []);
+
+useEffect(() => {
+  if (currentMonth) localStorage.setItem("lastMonth", currentMonth);
+}, [currentMonth]);
 
 
 // Save the month whenever it changes
