@@ -558,15 +558,21 @@ export default function Page() {
             )}
           </tbody>
         </table>
+      </div>   {/* Transaction History ends */}
+
+      {/* Export / Import buttons at bottom */}
+      <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
+        <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
+        <label style={{ fontWeight: 700, cursor: "pointer" }}>
+          Import
+          <input
+            type="file"
+            accept="application/json"
+            onChange={importJSON}
+            style={{ display: "none" }}
+          />
+        </label>
       </div>
-    </div>
+    </div>   {/* Main wrapper ends */}
   );
 }
-{/* Export / Import buttons at bottom */}
-<div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-  <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
-  <label style={{ fontWeight: 700, cursor: "pointer" }}>
-    Import
-    <input type="file" accept="application/json" onChange={importJSON} style={{ display: "none" }} />
-  </label>
-</div>
