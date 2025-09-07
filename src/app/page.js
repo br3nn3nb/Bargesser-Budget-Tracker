@@ -45,12 +45,12 @@ const defaultIncome = [
 
 export default function Page() {
   // ---- State
-const [currentMonth, setCurrentMonth] = useState(""); // start empty
-useEffect(() => {
-  const now = new Date();
-  const savedMonth = localStorage.getItem("currentMonth");
-  setCurrentMonth(savedMonth || getMonthKey(now));
-}, []);
+const [currentMonth, setCurrentMonth] = useState(() => {
+  // Check if there's a saved month in localStorage
+  const saved = localStorage.getItem("lastViewedMonth");
+  return saved || getMonthKey(); // fallback to current month
+});
+
 
 // Save the month whenever it changes
 useEffect(() => {
@@ -103,10 +103,13 @@ useEffect(() => {
   }, [currentMonth]);
 
   // ---- Persist per-month
-  useEffect(() => {
-    const payload = { expenses, income, transactions, beginningBalance, quickAdds };
-    localStorage.setItem(currentMonth, JSON.stringify(payload));
-  }, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
+useEffect(() => {
+  const payload = { expenses, income, transactions, beginningBalance, quickAdds };
+  localStorage.setItem(currentMonth, JSON.stringify(payload));
+
+  // Save the last viewed month for next visit
+  localStorage.setItem("lastViewedMonth", currentMonth);
+}, [expenses, income, transactions, beginningBalance, quickAdds, currentMonth]);
 
   // ---- Derived totals
   const totalExpenses = transactions.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0), 0);
