@@ -408,7 +408,17 @@ export default function Page() {
               <tr>
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
-                <th style={thTdStyle}>Spent {formatCurrency(totalExpenses)}</th>
+                <th
+                  style={{
+                    ...thTdStyle,
+                    whiteSpace: "normal",
+                    overflow: "visible",
+                    textOverflow: "clip",
+                    fontSize: 16,
+                  }}
+                >
+                  Spent {formatCurrency(totalExpenses)}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -463,7 +473,17 @@ export default function Page() {
               <tr>
                 <th style={thTdStyle}>Category</th>
                 <th style={thTdStyle}>Budget</th>
-                <th style={thTdStyle}>Received {formatCurrency(totalIncome)}</th>
+                <th
+                  style={{
+                    ...thTdStyle,
+                    whiteSpace: "normal",
+                    overflow: "visible",
+                    textOverflow: "clip",
+                    fontSize: 16,
+                  }}
+                >
+                  Received {formatCurrency(totalIncome)}
+                </th>
               </tr>
             </thead>
             <tbody>
