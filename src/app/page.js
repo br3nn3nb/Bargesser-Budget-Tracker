@@ -552,27 +552,28 @@ export default function Page() {
                   <td style={thTdStyle}>{tx.category}</td>
                   <td style={thTdStyle}>{tx.description}</td>
                   <td style={thTdStyle}>{formatCurrency(tx.amount)}</td>
-                  <td style={thTdStyle}><button onClick={() => deleteTransaction(tx.id)}>Delete</button></td>
+                  <td style={thTdStyle}>
+                    <button onClick={() => deleteTransaction(tx.id)}>Delete</button>
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>   {/* Transaction History ends */}
+              ))}
+            </tbody>
+          </table>
+        </div>   {/* Transaction History ends */}
 
-      {/* Export / Import buttons at bottom */}
-      <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
-        <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
-        <label style={{ fontWeight: 700, cursor: "pointer" }}>
-          Import
-          <input
-            type="file"
-            accept="application/json"
-            onChange={importJSON}
-            style={{ display: "none" }}
-          />
-        </label>
-      </div>
-    </div>   {/* Main wrapper ends */}
+        {/* Export / Import buttons at bottom */}
+        <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
+          <button onClick={exportJSON} style={{ fontWeight: 800 }}>Export JSON</button>
+          <label style={{ fontWeight: 700, cursor: "pointer" }}>
+            Import
+            <input
+              type="file"
+              accept="application/json"
+              onChange={importJSON}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
+      </div>   {/* Main wrapper ends */}
   );
 }
