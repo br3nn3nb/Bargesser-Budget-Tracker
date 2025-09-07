@@ -429,7 +429,16 @@ export default function Page() {
                       <div style={{ marginLeft: 6, fontWeight: 800 }}>{formatCurrency(e.budget)}</div>
                     </div>
                   </td>
-                  <td style={thTdStyle}>{formatCurrency(e.spent)}</td>
+                  <td
+                    style={{
+                      ...thTdStyle,
+                      whiteSpace: "normal",
+                      overflow: "visible",
+                      fontSize: 16,
+                    }}
+                  >
+                    {formatCurrency(e.spent)}
+                  </td>
                 </tr>
               ))}
               <tr>
@@ -475,7 +484,16 @@ export default function Page() {
                       <div style={{ marginLeft: 6, fontWeight: 800 }}>{formatCurrency(i.budget)}</div>
                     </div>
                   </td>
-                  <td style={thTdStyle}>{formatCurrency(i.received)}</td>
+                  <td
+                    style={{
+                      ...thTdStyle,
+                      whiteSpace: "normal",
+                      overflow: "visible",
+                      fontSize: 16,
+                    }}
+                  >
+                    {formatCurrency(i.received)}
+                  </td>
                 </tr>
               ))}
               <tr>
