@@ -45,7 +45,16 @@ const defaultIncome = [
 
 export default function Page() {
   // ---- State
-  const [currentMonth, setCurrentMonth] = useState(getMonthKey());
+const [currentMonth, setCurrentMonth] = useState(() => {
+  const lastMonth = localStorage.getItem("lastMonthVisited");
+  return lastMonth || getMonthKey(); // fallback to current month
+});
+
+// Save the month whenever it changes
+useEffect(() => {
+  localStorage.setItem("lastMonthVisited", currentMonth);
+}, [currentMonth]);
+
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
   const [transactions, setTransactions] = useState([]);
