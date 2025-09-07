@@ -577,3 +577,6 @@ export default function Page() {
     />
   </label>
 </div>
+</div>   {/* Main wrapper ends */}
+  );
+}
